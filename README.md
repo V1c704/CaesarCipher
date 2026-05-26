@@ -1,35 +1,34 @@
 # Hardware Caesar Cipher Encoder/Decoder
 
 ## Overview
-This repository contains a SystemVerilog implementation of the classic **Caesar Cipher**. It is designed as a purely combinational logic circuit that shifts 8-bit ASCII characters by a user-defined key. The project includes the core encoding/decoding module, a top-level pipeline demonstrating a full send-receive cycle, and a simulation testbench.
+This repository contains a SystemVerilog implementation of the classic **Caesar Cipher**. It is designed as a purely combinational logic circuit that shifts 8-bit ASCII characters by a user-defined key. 
 
-## Architecture and Modules
 
-The design is split into three main files:
+## Concept & Architecture
+The architecture relies on continuous data flow through two back-to-back `Caesar` modules. The first module applies a positive shift to the incoming 8-bit ASCII character, while the second module acts as the decoder by applying the mathematical complement of that shift, thereby restoring the original data.
 
-### 1. `Caesar` (Core Module)
-A combinational module that takes an 8-bit input character (`data_in`) and an 8-bit shift key (`shift`). 
-* **ASCII Wrap-Around Logic:** It uses a continuous assignment (`assign`) with a ternary operator to handle alphabetical overflow. If the shifted value exceeds `90` (the ASCII decimal value for uppercase 'Z'), it automatically subtracts `26` to wrap back to the beginning of the alphabet.
+<img width="2173" height="382" alt="image" src="https://github.com/user-attachments/assets/61d36f67-c812-4c3a-a8b8-ce9faa8e8f1b" />
 
-### 2. `Caesar_decoding` (System Wrapper)
-A structural module that instantiates two `Caesar` blocks back-to-back: an **encoder** and a **decoder**.
-* Demonstrates how to reverse the cipher.
-* The decode shift key is dynamically calculated as `26 - shift_code` to perfectly reverse the encoder's shift.
+*(RTL Schematic detailing the parallel instantiation of the encoder and decoder `Caesar` modules, highlighting the mathematical wrap-around addition and subtraction logic.)*
 
-### 3. `Testbench`
-A simulation testbench verifying the logic using the **ROT13** variant (a shift of `13`, where encoding and decoding are symmetric).
-* Passes the string `"COMBINATIONAL"` character by character with a `1ns` delay between characters.
-* Instantiates the encoder and decoder to verify that `data_sent` matches `data_received` after processing.
+## Module Descriptions
 
-## Technical Details
-* **Language:** SystemVerilog
-* **Logic Type:** Combinational (No clocks or sequential elements)
-* **Input Constraint:** The current wrap-around logic (`> 8'd90`) is optimized for **Uppercase ASCII characters**.
+| Sub-Module | Purpose |
+| :--- | :--- |
+| **`Caesar`** (Core) | Takes an 8-bit character (`data_in`) and a shift key. Uses a ternary operator to handle alphabetical overflow (if `value > 90`, subtract `26`). |
+| **`Caesar_decoding`** (Top) | A structural wrapper that instantiates an encoder and decoder back-to-back, dynamically assigning the decoder's key as `26 - shift_code`. |
 
-## Simulation
-This code can be simulated in any standard HDL simulator (e.g., ModelSim, Intel Quartus, Xilinx Vivado, or EDA Playground).
+## Verification Strategy
+* **Test Data:** The string `"COMBINATIONAL"` is fed into the system character by character.
+* **Timing:** A `1 ns` propagation delay is applied between each character shift.
+* **Target:** The testbench monitors `data_received` to ensure it exactly matches the original `data_sent` after passing through both the encryption and decryption stages.
 
-1. Compile all three modules.
-2. Set `Testbench` as the top-level entity.
-3. Run the simulation.
-4. View the waveform to observe `data_encoded` generating the ciphertext, and `data_received` perfectly reconstructing the word `"COMBINATIONAL"`.
+## Simulation Results
+
+<img width="1748" height="134" alt="image" src="https://github.com/user-attachments/assets/ad486037-8448-464c-b860-59e097a094f8" />
+
+*(Simulation waveform verifying the ROT13 cipher. The input string "COMBINATIONAL" is successfully encoded to "PBZOVANGVBANY" and subsequently decoded back to the original "COMBINATIONAL".)*
+
+## Future Improvements
+* Expand the wrap-around boundary logic to support both uppercase and lowercase ASCII characters.
+* Parameterize the alphabet length (currently hardcoded to `26`) to support custom or non-standard character sets.
